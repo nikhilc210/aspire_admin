@@ -18,6 +18,12 @@ const initialState = {
   admins: [],
   adminsStatus: "idle",
   adminsError: null,
+  createAdminStatus: "idle",
+  createAdminError: null,
+  updatePasswordStatus: "idle",
+  updatePasswordError: null,
+  updateStatusStatus: "idle",
+  updateStatusError: null,
   status: "idle",
   error: null,
 };
@@ -75,6 +81,68 @@ export const fetchAdmins = createAsyncThunk(
   },
 );
 
+// POST /api/admins -> create a new admin
+export const createAdmin = createAsyncThunk(
+  "admin/createAdmin",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const url = "/api/admins";
+      const res = await api.post(url, payload);
+      return res?.data || null;
+    } catch (err) {
+      const message =
+        err.response?.data?.message || err.message || "Failed to create admin";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+// PATCH /api/admins/:id/password -> update admin password
+export const updateAdminPassword = createAsyncThunk(
+  "admin/updateAdminPassword",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { id, oldPassword, newPassword } = payload;
+      console.log("updateAdminPassword thunk received:", {
+        id,
+        oldPassword,
+        newPassword,
+      });
+      const url = `/api/admins/${id}/password`;
+      console.log("Sending to API:", { oldPassword, newPassword });
+      const res = await api.patch(url, { oldPassword, newPassword });
+      return res?.data || null;
+    } catch (err) {
+      console.error("updateAdminPassword error:", err);
+      const message =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update password";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+// PATCH /api/admins/:id/block -> update admin block status
+export const updateAdminStatus = createAsyncThunk(
+  "admin/updateAdminStatus",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const { id, isBlocked } = payload;
+      console.log("updateAdminStatus thunk received:", { id, isBlocked });
+      const url = `/api/admins/${id}/block`;
+      console.log("Sending to API:", { blocked: isBlocked });
+      const res = await api.patch(url, { blocked: isBlocked });
+      return res?.data || null;
+    } catch (err) {
+      console.error("updateAdminStatus error:", err);
+      const message =
+        err.response?.data?.message || err.message || "Failed to update status";
+      return rejectWithValue(message);
+    }
+  },
+);
+
 const adminSlice = createSlice({
   name: "admin",
   initialState,
@@ -127,6 +195,78 @@ const adminSlice = createSlice({
         state.adminsStatus = "failed";
         state.adminsError =
           action.payload || action.error?.message || "Failed to fetch admins";
+      })
+      .addCase(createAdmin.pending, (state) => {
+        state.createAdminStatus = "loading";
+        state.createAdminError = null;
+      })
+      .addCase(createAdmin.fulfilled, (state, action) => {
+        state.createAdminStatus = "succeeded";
+        const payload = action.payload || {};
+        const created = payload.data ?? payload.admin ?? payload ?? null;
+        if (created && typeof created === "object") {
+          // best-effort update list without knowing backend shape
+          if (Array.isArray(state.admins)) {
+            const id = created._id ?? created.id;
+            const exists = id
+              ? state.admins.some((a) => (a?._id ?? a?.id) === id)
+              : false;
+            if (!exists) state.admins = [created, ...state.admins];
+          }
+        }
+      })
+      .addCase(createAdmin.rejected, (state, action) => {
+        state.createAdminStatus = "failed";
+        state.createAdminError =
+          action.payload || action.error?.message || "Failed to create admin";
+      })
+      .addCase(updateAdminPassword.pending, (state) => {
+        state.updatePasswordStatus = "loading";
+        state.updatePasswordError = null;
+      })
+      .addCase(updateAdminPassword.fulfilled, (state, action) => {
+        state.updatePasswordStatus = "succeeded";
+        const payload = action.payload || {};
+        const updated = payload.data ?? payload.admin ?? payload ?? null;
+        if (updated && typeof updated === "object") {
+          const id = updated._id ?? updated.id;
+          if (id && Array.isArray(state.admins)) {
+            const idx = state.admins.findIndex((a) => (a?._id ?? a?.id) === id);
+            if (idx >= 0) {
+              state.admins[idx] = { ...state.admins[idx], ...updated };
+            }
+          }
+        }
+      })
+      .addCase(updateAdminPassword.rejected, (state, action) => {
+        state.updatePasswordStatus = "failed";
+        state.updatePasswordError =
+          action.payload ||
+          action.error?.message ||
+          "Failed to update password";
+      })
+      .addCase(updateAdminStatus.pending, (state) => {
+        state.updateStatusStatus = "loading";
+        state.updateStatusError = null;
+      })
+      .addCase(updateAdminStatus.fulfilled, (state, action) => {
+        state.updateStatusStatus = "succeeded";
+        const payload = action.payload || {};
+        const updated = payload.data ?? payload.admin ?? payload ?? null;
+        if (updated && typeof updated === "object") {
+          const id = updated._id ?? updated.id;
+          if (id && Array.isArray(state.admins)) {
+            const idx = state.admins.findIndex((a) => (a?._id ?? a?.id) === id);
+            if (idx >= 0) {
+              state.admins[idx] = { ...state.admins[idx], ...updated };
+            }
+          }
+        }
+      })
+      .addCase(updateAdminStatus.rejected, (state, action) => {
+        state.updateStatusStatus = "failed";
+        state.updateStatusError =
+          action.payload || action.error?.message || "Failed to update status";
       })
       .addCase(adminLogout.pending, (state) => {
         state.status = "loading";
