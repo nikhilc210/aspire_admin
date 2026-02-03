@@ -1,0 +1,240 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Login page styles */
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.login-left {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+}
+
+.left-bg-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.28;
+  filter: saturate(1.1) blur(0.6px);
+}
+
+.left-content {
+  position: relative;
+  color: #fff;
+  padding: 3rem;
+  max-width: 480px;
+  z-index: 2;
+  text-align: left;
+}
+
+.left-content h1 {
+  font-size: 2.6rem;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.02;
+}
+
+.left-content p {
+  color: rgba(255,255,255,0.92);
+  margin: 0.6rem 0 0;
+  font-size: 1.02rem;
+}
+
+.feature-list {
+  margin-top: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.feature-sub {
+  color: rgba(255,255,255,0.88);
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.login-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f7f9fc;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(16,24,40,0.08);
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forgot {
+  font-size: 0.92rem;
+}
+
+.signup-row {
+  text-align: center;
+  margin-top: 8px;
+}
+
+@media (max-width: 880px) {
+  .login-container {
+    grid-template-columns: 1fr;
+  }
+  .left-content {
+    text-align: center;
+    padding: 2rem;
+  }
+  .login-card {
+    margin-top: -48px;
+    border-radius: 16px;
+  }
+}
+
+/* full-bleed wrapper: lets the login layout span the full viewport width
+   even if #root has a max-width / padding. */
+.full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+/* Dashboard layout */
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+.dashboard-sidebar {
+  background: linear-gradient(180deg,#0f172a,#0b1220);
+  color: #fff;
+  /* remove outer padding so sidebar touches the viewport edge when full-bleed */
+  padding: 0;
+}
+
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+  background: #f7f9fc;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 28px;
+  border-bottom: 1px solid rgba(16,24,40,0.04);
+  background: transparent;
+  height: 72px;
+  box-sizing: border-box;
+}
+
+.dashboard-header .header-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.dashboard-header .header-left .ant-typography {
+  line-height: 1.05;
+}
+
+.dashboard-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.dashboard-header .header-right .ant-avatar {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-content {
+  padding: 24px 28px;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 880px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-sidebar {
+    order: 2;
+  }
+  .dashboard-main {
+    order: 1;
+  }
+  .dashboard-header {
+    padding: 12px 16px;
+    height: auto;
+    align-items: flex-start;
+  }
+}
