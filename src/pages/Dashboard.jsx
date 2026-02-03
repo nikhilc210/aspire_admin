@@ -28,6 +28,7 @@ import {
   createJob,
   updateJobStatus,
 } from "../features/jobs/jobSlice";
+import { fetchContacts } from "../features/contacts/contactSlice";
 import { fetchApplications } from "../features/applications/applicationSlice";
 
 const { Title, Paragraph } = Typography;
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [passwordForm] = Form.useForm();
   const [jobForm] = Form.useForm();
   const [descriptionHtml, setDescriptionHtml] = useState("");
+  const [tableSearch, setTableSearch] = useState("");
 
   const dispatch = useDispatch();
   const admins = useSelector((state) => state.admin?.admins ?? []);
@@ -63,6 +65,10 @@ export default function Dashboard() {
   const jobsStatus = useSelector((state) => state.jobs?.jobsStatus ?? "idle");
   const updateJobStatusStatus = useSelector(
     (state) => state.jobs?.updateStatusStatus ?? "idle",
+  );
+  const contacts = useSelector((state) => state.contacts?.contacts ?? []);
+  const contactsStatus = useSelector(
+    (state) => state.contacts?.contactsStatus ?? "idle",
   );
   const applications = useSelector(
     (state) => state.applications?.applications ?? [],
@@ -173,6 +179,8 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // reset search when switching sections
+    setTableSearch("");
     if (selected === "admin") {
       if (adminsStatus === "idle" || adminsStatus === "failed") {
         dispatch(fetchAdmins()).catch(() => {});
@@ -180,6 +188,10 @@ export default function Dashboard() {
     } else if (selected === "job") {
       if (jobsStatus === "idle" || jobsStatus === "failed") {
         dispatch(fetchJobs()).catch(() => {});
+      }
+    } else if (selected === "contact") {
+      if (contactsStatus === "idle" || contactsStatus === "failed") {
+        dispatch(fetchContacts()).catch(() => {});
       }
     } else if (selected === "applied") {
       if (applicationsStatus === "idle" || applicationsStatus === "failed") {
@@ -253,6 +265,14 @@ export default function Dashboard() {
 
         // build data source for table
         const dataSource = (admins || []).map((a) => ({ key: a._id, ...a }));
+        const q = tableSearch.trim().toLowerCase();
+        const filtered = q
+          ? dataSource.filter((r) =>
+              [r.fullname, r.email, r.location]
+                .filter(Boolean)
+                .some((v) => String(v).toLowerCase().includes(q)),
+            )
+          : dataSource;
 
         return (
           <Card
@@ -271,9 +291,19 @@ export default function Dashboard() {
                 <Title level={2}>Admins</Title>
                 <Paragraph>List of registered admins.</Paragraph>
               </div>
-              <Button type="primary" onClick={() => setIsModalOpen(true)}>
-                Add New Admin
-              </Button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Input.Search
+                  placeholder="Search..."
+                  allowClear
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  onSearch={(val) => setTableSearch(val)}
+                  style={{ width: 260 }}
+                />
+                <Button type="primary" onClick={() => setIsModalOpen(true)}>
+                  Add New Admin
+                </Button>
+              </div>
             </div>
 
             {adminsStatus === "loading" ? (
@@ -283,7 +313,7 @@ export default function Dashboard() {
             ) : dataSource && dataSource.length > 0 ? (
               <Table
                 columns={columns}
-                dataSource={dataSource}
+                dataSource={filtered}
                 pagination={{ pageSize: 10 }}
                 rowKey="key"
               />
@@ -446,17 +476,131 @@ export default function Dashboard() {
           </Card>
         );
       }
-      case "contact":
+      case "contact": {
+        const columns = [
+          {
+            title: "Name",
+            dataIndex: "fullname",
+            key: "fullname",
+            sorter: (a, b) =>
+              (a.fullname || "").localeCompare(b.fullname || ""),
+          },
+          { title: "Email", dataIndex: "email", key: "email" },
+          { title: "Phone", dataIndex: "phone", key: "phone" },
+          { title: "Company", dataIndex: "company", key: "company" },
+          { title: "Service", dataIndex: "service", key: "service" },
+          {
+            title: "Message",
+            dataIndex: "message",
+            key: "message",
+            render: (text) =>
+              text ? (
+                <Tooltip title={text}>
+                  <span>
+                    {text.length > 60 ? `${text.slice(0, 60)}…` : text}
+                  </span>
+                </Tooltip>
+              ) : (
+                "—"
+              ),
+          },
+          {
+            title: "Handled",
+            dataIndex: "handled",
+            key: "handled",
+            render: (v) => (
+              <Tag color={v ? "green" : "orange"}>{v ? "Yes" : "No"}</Tag>
+            ),
+            filters: [
+              { text: "Handled", value: true },
+              { text: "Unhanded", value: false },
+            ],
+            onFilter: (value, record) => record.handled === value,
+          },
+          {
+            title: "Created",
+            dataIndex: "createdAt",
+            key: "createdAt",
+            render: (t) => (t ? new Date(t).toLocaleString() : "–"),
+            sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+          },
+        ];
+
+        // Data source built directly in Table props
+
         return (
-          <Card style={{ maxWidth: 980, margin: "24px auto" }}>
-            <Title level={2}>Contact Us</Title>
-            <Paragraph>Support and contact information.</Paragraph>
-            <div style={{ marginTop: 12 }}>
-              <div>Email: support@aspire.example</div>
-              <div>Phone: +1 (555) 123-4567</div>
+          <Card
+            style={{ width: "100%", margin: 0 }}
+            bodyStyle={{ padding: 12 }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: 12,
+              }}
+            >
+              <div>
+                <Title level={2}>Contact Messages</Title>
+                <Paragraph>
+                  List of messages submitted via contact form.
+                </Paragraph>
+              </div>
             </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                padding: "0 12px 12px",
+              }}
+            >
+              <Input.Search
+                placeholder="Search..."
+                allowClear
+                value={tableSearch}
+                onChange={(e) => setTableSearch(e.target.value)}
+                onSearch={(val) => setTableSearch(val)}
+                style={{ width: 260 }}
+              />
+            </div>
+
+            {contactsStatus === "loading" ? (
+              <div style={{ textAlign: "center", padding: 24 }}>
+                <Spin />
+              </div>
+            ) : contacts && contacts.length > 0 ? (
+              <Table
+                columns={columns}
+                dataSource={(contacts || [])
+                  .map((c) => ({ key: c._id, ...c }))
+                  .filter((r) => {
+                    const q = tableSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    const pool = [
+                      r.fullname,
+                      r.email,
+                      r.phone,
+                      r.company,
+                      r.service,
+                      r.message,
+                    ]
+                      .filter(Boolean)
+                      .map((v) => String(v).toLowerCase())
+                      .join(" ");
+                    return pool.includes(q);
+                  })}
+                pagination={{ pageSize: 10 }}
+                rowKey="key"
+              />
+            ) : (
+              <div style={{ padding: 24 }}>
+                <Empty description="No contacts found" />
+              </div>
+            )}
           </Card>
         );
+      }
       case "applied": {
         const appColumns = [
           {
@@ -503,21 +647,21 @@ export default function Dashboard() {
           {
             title: "Resume",
             key: "resumeUrl",
-            render: (_, record) =>
-              record.resumeUrl ? (
-                <a
-                  href={
-                    "https://aspire-backend-piyf.onrender.com" +
-                    record.resumeUrl
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Download
+            render: (_, record) => {
+              const base = "https://aspire-backend-piyf.onrender.com/api";
+              const firstImageUrl = record?.images?.[0]?.url || null;
+              const fallbackUrl = record?.resumeUrl || null;
+              const url = firstImageUrl || fallbackUrl;
+
+              if (!url) return "—";
+              const href = url.startsWith("http") ? url : base + url;
+              const label = record?.images?.[0]?.filename || "Download";
+              return (
+                <a href={href} target="_blank" rel="noreferrer">
+                  {label}
                 </a>
-              ) : (
-                "—"
-              ),
+              );
+            },
           },
 
           {
@@ -555,6 +699,28 @@ export default function Dashboard() {
           key: a._id,
           ...a,
         }));
+        const qA = tableSearch.trim().toLowerCase();
+        const appFiltered = qA
+          ? appDataSource.filter((r) => {
+              const job = r.job || {};
+              const pieces = [
+                r.fullname,
+                r.email,
+                r.phone,
+                r.company,
+                r.service,
+                r.message,
+                job.title,
+                job.employmentType,
+                job.experience,
+                Array.isArray(job.tags) ? job.tags.join(" ") : null,
+              ]
+                .filter(Boolean)
+                .map((v) => String(v).toLowerCase())
+                .join(" ");
+              return pieces.includes(qA);
+            })
+          : appDataSource;
 
         return (
           <Card
@@ -573,6 +739,22 @@ export default function Dashboard() {
                 <Title level={2}>Applied Jobs</Title>
                 <Paragraph>List of all job applications.</Paragraph>
               </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  padding: "0 12px 12px",
+                }}
+              >
+                <Input.Search
+                  placeholder="Search..."
+                  allowClear
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  onSearch={(val) => setTableSearch(val)}
+                  style={{ width: 260 }}
+                />
+              </div>
             </div>
 
             {applicationsStatus === "loading" ? (
@@ -582,7 +764,7 @@ export default function Dashboard() {
             ) : appDataSource && appDataSource.length > 0 ? (
               <Table
                 columns={appColumns}
-                dataSource={appDataSource}
+                dataSource={appFiltered}
                 pagination={{ pageSize: 10 }}
                 rowKey="key"
                 scroll={{ x: 1400 }}
@@ -686,6 +868,23 @@ export default function Dashboard() {
           key: job._id,
           ...job,
         }));
+        const qJ = tableSearch.trim().toLowerCase();
+        const jobFiltered = qJ
+          ? jobDataSource.filter((r) => {
+              const pieces = [
+                r.title,
+                r.company,
+                r.location,
+                r.employmentType,
+                r.experience,
+                Array.isArray(r.tags) ? r.tags.join(" ") : null,
+              ]
+                .filter(Boolean)
+                .map((v) => String(v).toLowerCase())
+                .join(" ");
+              return pieces.includes(qJ);
+            })
+          : jobDataSource;
 
         return (
           <Card
@@ -704,9 +903,19 @@ export default function Dashboard() {
                 <Title level={2}>Jobs</Title>
                 <Paragraph>List of all job postings.</Paragraph>
               </div>
-              <Button type="primary" onClick={() => setJobModalOpen(true)}>
-                Add New Job
-              </Button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Input.Search
+                  placeholder="Search..."
+                  allowClear
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  onSearch={(val) => setTableSearch(val)}
+                  style={{ width: 260 }}
+                />
+                <Button type="primary" onClick={() => setJobModalOpen(true)}>
+                  Add New Job
+                </Button>
+              </div>
             </div>
 
             {jobsStatus === "loading" ? (
@@ -716,7 +925,7 @@ export default function Dashboard() {
             ) : jobDataSource && jobDataSource.length > 0 ? (
               <Table
                 columns={jobColumns}
-                dataSource={jobDataSource}
+                dataSource={jobFiltered}
                 pagination={{ pageSize: 10 }}
                 rowKey="key"
                 scroll={{ x: 1200 }}
@@ -820,6 +1029,23 @@ export default function Dashboard() {
           key: job._id,
           ...job,
         }));
+        const qJJ = tableSearch.trim().toLowerCase();
+        const jobFiltered2 = qJJ
+          ? jobDataSource.filter((r) => {
+              const pieces = [
+                r.title,
+                r.company,
+                r.location,
+                r.employmentType,
+                r.experience,
+                Array.isArray(r.tags) ? r.tags.join(" ") : null,
+              ]
+                .filter(Boolean)
+                .map((v) => String(v).toLowerCase())
+                .join(" ");
+              return pieces.includes(qJJ);
+            })
+          : jobDataSource;
 
         return (
           <Card
@@ -838,9 +1064,19 @@ export default function Dashboard() {
                 <Title level={2}>Jobs</Title>
                 <Paragraph>List of all job postings.</Paragraph>
               </div>
-              <Button type="primary" onClick={() => setJobModalOpen(true)}>
-                Add New Job
-              </Button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Input.Search
+                  placeholder="Search..."
+                  allowClear
+                  value={tableSearch}
+                  onChange={(e) => setTableSearch(e.target.value)}
+                  onSearch={(val) => setTableSearch(val)}
+                  style={{ width: 260 }}
+                />
+                <Button type="primary" onClick={() => setJobModalOpen(true)}>
+                  Add New Job
+                </Button>
+              </div>
             </div>
 
             {jobsStatus === "loading" ? (
@@ -850,7 +1086,7 @@ export default function Dashboard() {
             ) : jobDataSource && jobDataSource.length > 0 ? (
               <Table
                 columns={jobColumns}
-                dataSource={jobDataSource}
+                dataSource={jobFiltered2}
                 pagination={{ pageSize: 10 }}
                 rowKey="key"
                 scroll={{ x: 1200 }}
